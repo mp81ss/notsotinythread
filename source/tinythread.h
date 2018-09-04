@@ -642,7 +642,7 @@ public:
   /// Constructor with initialization.
   /// \param[in] n The initial semaphore value.
   /// \sa is_valid
-  semaphore(unsigned int n) {
+  semaphore(unsigned int n) : valid_(false) {
     this->init(n);
   }
 
@@ -700,12 +700,14 @@ private:
 #endif
 
   inline void destroy() {
-    valid_ = false;
+	if (valid_) {
+      valid_ = false;
 #ifdef _TTHREAD_WIN32_
-    (void)CloseHandle(semaphore_);
+	  (void)CloseHandle(semaphore_);
 #else
-    (void)sem_destroy(&semaphore_);
+      (void)sem_destroy(&semaphore_);
 #endif
+	}
   }
 
   semaphore(const semaphore&);
