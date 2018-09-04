@@ -637,12 +637,12 @@ class semaphore
 public:
 
   /// Default Constructor
-  semaphore() : valid_(false) { }
+  semaphore() : created_(false), valid_(false) { }
 
   /// Constructor with initialization.
   /// \param[in] n The initial semaphore value.
   /// \sa is_valid
-  semaphore(unsigned int n) {
+  explicit semaphore(unsigned int n) : created_(false), valid_(false) {
     this->init(n);
   }
 
@@ -659,15 +659,22 @@ public:
 
   /// Init semaphore.
   /// \param[in] n The initial semaphore value.
+  /// \return true if ok, false on error (n was zero?)
   /// \sa is_valid
-  inline void init(unsigned int n) {
+  inline bool init(unsigned int n) {
+
       destroy();
+
 #ifdef _TTHREAD_WIN32_
       semaphore_ = CreateSemaphore(NULL, n, 1 << 30, NULL);
-      valid_ = semaphore_ != NULL;
+      created_ = semaphore_ != NULL;
 #else
-      valid_ = sem_init(&semaphore_, 0, n) == 0;
+      created_ = sem_init(&semaphore_, 0, n) == 0;
 #endif
+
+      valid_ = created_;
+
+      return this->is_valid();
   }
 
     /// Wait for semaphore.
@@ -691,6 +698,7 @@ public:
 
 private:
 
+  bool created_;
   bool valid_;
 
 #ifdef _TTHREAD_WIN32_
@@ -700,12 +708,18 @@ private:
 #endif
 
   inline void destroy() {
-    valid_ = false;
+
+    if (created_) {
 #ifdef _TTHREAD_WIN32_
-    (void)CloseHandle(semaphore_);
+      (void)CloseHandle(semaphore_);
 #else
-    (void)sem_destroy(&semaphore_);
+      (void)sem_destroy(&semaphore_);
 #endif
+
+      created_ = false;
+    }
+
+    valid_ = false;
   }
 
   semaphore(const semaphore&);
@@ -727,15 +741,16 @@ public:
   /// Constructor with initialization.
   /// \param[in] n The number of threads that will wait for this barrier.
   /// \sa is_valid
-  barrier(unsigned int n) {
+  explicit barrier(unsigned int n) {
     this->init(n);
   }
 
   /// Initialize the Barrier.
   /// \param[in] n The number of threads that will wait for this barrier.
   ///              Must be \b greater than zero.
+  /// \return true if ok, false on error (n was zero?)
   /// \sa is_valid
-  void init(unsigned int n);
+  bool init(unsigned int n);
 
   /// Wait on the barrier.
   /// The calling thread will wait on this barrier.

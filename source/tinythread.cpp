@@ -305,7 +305,7 @@ thread::id this_thread::get_id()
 // barrier
 //------------------------------------------------------------------------------
 
-void barrier::init(unsigned int n)
+bool barrier::init(unsigned int n)
 {
   if (n > 0) {
     semaphore_.init(0);
@@ -318,6 +318,8 @@ void barrier::init(unsigned int n)
   else {
     valid_ = false;
   }
+
+  return this->is_valid();
 }
 
 int barrier::wait()
